@@ -17,7 +17,7 @@ type Channel struct {
 }
 
 func main() {
-	router := &Router{}
+	router := NewRouter()
 
 	router.Handle("channel add", addChannel)
 
