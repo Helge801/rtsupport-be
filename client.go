@@ -2,8 +2,8 @@ package main
 
 import (
 	"fmt"
-	"math/rand"
-	"time"
+
+	"github.com/gorilla/websocket"
 )
 
 // Message for
@@ -14,46 +14,24 @@ type Message struct {
 
 //Client for
 type Client struct {
-	send chan Message
+	send   chan Message
+	socket *websocket.Conn
 }
 
-func (c *Client) write() {
+func (c *Client) Write() {
 	for msg := range c.send {
-		//TODO: socket.sendJSON(msg)
-		fmt.Printf("%#v\n", msg)
+		if err := c.socket.WriteJSON(msg); err != nil {
+			fmt.Println(err)
+			break
+		}
 	}
-}
-
-func (c *Client) subscribeChannels() {
-	// TODO: changefeed Query RethinkDB
-	for {
-		time.Sleep(r())
-		c.send <- Message{"channel add", ""}
-	}
-}
-
-func (c *Client) subscribeMessages() {
-	// TODO: changefeed Query RethinkDB
-	for {
-		time.Sleep(r())
-		c.send <- Message{"message add", ""}
-	}
-}
-
-func r() time.Duration {
-	return time.Millisecond * time.Duration(rand.Intn(1000))
+	c.socket.Close()
 }
 
 //NewClient return new Client Struct
-func NewClient() *Client {
+func NewClient(socket *websocket.Conn) *Client {
 	return &Client{
-		send: make(chan Message),
+		send:   make(chan Message),
+		socket: socket,
 	}
-}
-
-func main() {
-	client := NewClient()
-	go client.subscribeChannels()
-	go client.subscribeMessages()
-	client.write()
 }
