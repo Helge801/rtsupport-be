@@ -6,6 +6,9 @@ import (
 	"github.com/gorilla/websocket"
 )
 
+// FindHandler for
+type FindHandler func(string) (Handler, bool)
+
 // Message for
 type Message struct {
 	Name string      `json:"name"`
@@ -14,8 +17,22 @@ type Message struct {
 
 //Client for
 type Client struct {
-	send   chan Message
-	socket *websocket.Conn
+	send        chan Message
+	socket      *websocket.Conn
+	findHandler FindHandler
+}
+
+func (c *Client) Read() {
+	var message Message
+	for {
+		if err := c.socket.ReadJSON(&message); err != nil {
+			break
+		}
+		if handler, found := c.findHandler(message.Name); found {
+			handler(c, message.Data)
+		}
+	}
+	c.socket.Close()
 }
 
 func (c *Client) Write() {
@@ -29,9 +46,10 @@ func (c *Client) Write() {
 }
 
 //NewClient return new Client Struct
-func NewClient(socket *websocket.Conn) *Client {
+func NewClient(socket *websocket.Conn, findHandler FindHandler) *Client {
 	return &Client{
-		send:   make(chan Message),
-		socket: socket,
+		send:        make(chan Message),
+		socket:      socket,
+		findHandler: findHandler,
 	}
 }
